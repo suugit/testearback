@@ -31,6 +31,17 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// aws
+	//AWS
+	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+
+	//s3?
+	implementation 'software.amazon.awssdk:s3:2.20.19'
+
+	// parse
+	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+
 }
 
 tasks.named('test') {
