@@ -1,21 +1,28 @@
 package com.example.ear.service;
 
+
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.example.ear.dto.request.ChatGptRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.polly.model.SynthesizeSpeechResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.UUID;
 
@@ -48,6 +55,7 @@ public class EarToWorldService {
     private final ChatGPTService chatGPTService;
     private final NaverOrcApiService naverOrcApiService;
     private final AmazonS3Client amazonS3Client;
+    private final PollyService pollyService;
 
 
 
@@ -59,7 +67,7 @@ public class EarToWorldService {
                 .build();
     }
 
-    public void mainLogic(MultipartFile imageFile) throws IOException {
+    public ByteArrayOutputStream mainLogic(MultipartFile imageFile) throws IOException {
         // 1. S3 에 이미지 파일 저장 후 이미지 URL 가져오기
         String imageUrl = getImageUrlFromS3(imageFile);
 
@@ -73,9 +81,24 @@ public class EarToWorldService {
         String summaryResultFromChatGPT = chatGPTService.prompt(SummaryDto.of(extractContent));
 
         // 4. 받아온 요약본을 AWS Polly 에 보내서 음성 파일 가져오기
+        ResponseInputStream<SynthesizeSpeechResponse> resultFromAwsPolly = pollyService
+                .synthesizeSpeech(summaryResultFromChatGPT, "earToWorld.mp3");
 
         // 5. 응답 받은 음성 파일을 클라이언트에게 반환하기
 
+        // 5-1)
+        // 음성 데이터를 읽어 바이트 배열로 변환
+        return dataToByteArray(resultFromAwsPolly);
+    }
+
+    private static ByteArrayOutputStream dataToByteArray(ResponseInputStream<SynthesizeSpeechResponse> resultFromAwsPolly) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        byte[] buffer = new byte[2 * 1024];
+        int bytesRead;
+        while ((bytesRead = resultFromAwsPolly.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, bytesRead);
+        }
+        return outputStream;
     }
 
     private String getImageUrlFromS3(MultipartFile imageFile) throws IOException {

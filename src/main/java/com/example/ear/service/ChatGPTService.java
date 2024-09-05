@@ -1,5 +1,6 @@
 package com.example.ear.service;
 
+
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.example.ear.config.ChatGPTConfig;
@@ -36,7 +37,9 @@ import static com.example.ear.dto.request.ChatGPTRequestDto.*;
 @RequiredArgsConstructor
 @Slf4j
 public class ChatGPTService {
+
     private final ChatGPTConfig chatGPTConfig;
+
     private final AmazonS3Client amazonS3Client;
 
     @Value("${openai.url.prompt}")
@@ -49,13 +52,13 @@ public class ChatGPTService {
     private String modelUrl;
 
     @Value(("${openai.secret-key}"))
-    private String secretKey;
+    private String openAiSecretKey;
 
     @Value("${cloud.aws.credentials.access-key}")
-    private String s3AccessKey;
+    private String accessKey;
 
     @Value("${cloud.aws.credentials.secret-key}")
-    private String s3SecretKey;
+    private String secretKey;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -67,13 +70,12 @@ public class ChatGPTService {
     private final ObjectMapper om = new ObjectMapper();
 
     private S3Client s3Client() {
-        AwsBasicCredentials awsCreds = AwsBasicCredentials.create(s3AccessKey, s3SecretKey);
+        AwsBasicCredentials awsCreds = AwsBasicCredentials.create(accessKey, secretKey);
         return S3Client.builder()
                 .region(Region.of(region))
                 .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
                 .build();
     }
-
 
 
     public List<Map<String, Object>> modelList() {

@@ -34,13 +34,17 @@ dependencies {
 
 	// aws
 	//AWS
-	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
+    implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
 
 	//s3?
 	implementation 'software.amazon.awssdk:s3:2.20.19'
 
 	// parse
 	implementation 'com.googlecode.json-simple:json-simple:1.1.1'
+
+	// aws polly
+	implementation 'software.amazon.awssdk:polly:2.20.19'
+
 
 }
 

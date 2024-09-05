@@ -74,6 +74,7 @@ public class NaverOrcApiService {
 
             // API 요청 전송
             con.connect();
+
             DataOutputStream wr = new DataOutputStream(con.getOutputStream());
             wr.write(postParams.getBytes("UTF-8"));
             wr.flush();
