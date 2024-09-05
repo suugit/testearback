@@ -1,0 +1,61 @@
+name: Java CI with Gradle
+
+on:
+  push:
+    branches: [ "main", "deploy" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: make application-prod.yml
+      run: |
+        mkdir -p ./src/main/resources
+        touch ./src/main/resources/application-prod.yml
+        echo "${{ secrets.APPLICATION_PROD }}" > ./src/main/resources/application-prod.yml
+        
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build with Gradle
+      run: ./gradlew build -x test
+      
+    - name: Docker build
+      run: |
+        docker login -u ${{ secrets.DOCKER_ID }} -p ${{ secrets.DOCKER_PW }}
+        docker build -t app .
+        docker tag app ${{ secrets.DOCKER_ID }}/earsToWorld-backend:latest
+        docker push ${{ secrets.DOCKER_ID }}/earsToWorld-backend:latest
+    
+    - name: Deploy
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ubuntu
+        key: ${{ secrets.PRIVATE_KEY }}
+        script: |
+          cd deploy
+          docker compose pull
+          docker compose up -d backend
+          docker image prune -a -f
+
+    - name: Discord Alert
+      uses: sarisia/actions-status-discord@v1
+      if: always()
+      with:
+        webhook: ${{ secrets.DISCORD_WEBHOOK }}
+        title: 배포 상태
+        description: ${{ job.status == 'success' && '배포성공' || '배포실패' }}
+        color: ${{ job.status == 'success' && '0x00ff00' || '0xff0000' }} 
